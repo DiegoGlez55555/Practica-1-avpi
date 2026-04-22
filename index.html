@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Simulador Préstamo</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+    margin: 0;
+    background: #0f172a;
+    color: #e5e7eb;
+}
+
+/* CONTENEDOR */
+.wrapper {
+    max-width: 1100px;
+    margin: 60px auto;
+    padding: 40px;
+}
+
+/* HEADER */
+h1 {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #94a3b8;
+    margin-bottom: 30px;
+}
+
+/* FORM */
+.form {
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-size: 13px;
+    color: #cbd5f5;
+    margin-bottom: 4px;
+}
+
+small {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+input, select {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #0f172a;
+    color: white;
+    transition: 0.2s;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border: 1px solid #3b82f6;
+}
+
+/* BOTON */
+button {
+    grid-column: span 3;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #2563eb;
+}
+
+/* RESULTADOS */
+.results {
+    margin-top: 25px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.card {
+    background: #1e293b;
+    padding: 18px;
+    border-radius: 14px;
+}
+
+.card span {
+    display: block;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.card b {
+    font-size: 20px;
+}
+
+/* TABLA */
+.table-container {
+    margin-top: 30px;
+    background: #1e293b;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #334155;
+    padding: 12px;
+    font-size: 13px;
+}
+
+td {
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+}
+
+tr:nth-child(even) {
+    background: #0f172a;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<h1>Simulador de Préstamo</h1>
+<div class="subtitle">Método francés · Cuotas constantes</div>
+
+<div class="form">
+
+<div class="field">
+<label>Capital (€)</label>
+<small>100.000 - 200.000</small>
+<input type="number" id="capital" min="100000" max="200000">
+</div>
+
+<div class="field">
+<label>Duración</label>
+<small>Máx. 30 años</small>
+<input type="number" id="años" max="30">
+</div>
+
+<div class="field">
+<label>Periodicidad</label>
+<small>Mensual / Trimestral / Anual</small>
+<select id="periodo">
+<option value="12">Mensual</option>
+<option value="4">Trimestral</option>
+<option value="1">Anual</option>
+</select>
+</div>
+
+<div class="field">
+<label>Euribor (%)</label>
+<input type="number" id="euribor">
+</div>
+
+<div class="field">
+<label>Tipo</label>
+<select id="tipo">
+<option value="fijo">Fijo (+1%)</option>
+<option value="variable">Variable (+0.5%)</option>
+</select>
+</div>
+
+<div class="field">
+<label>Bonificación</label>
+<small>0.10 - 0.25</small>
+<input type="number" id="bonificacion" step="0.01">
+</div>
+
+<button onclick="calcular()">Calcular</button>
+
+</div>
+
+<div class="results" id="resultado"></div>
+
+<div class="table-container">
+<div id="tabla"></div>
+</div>
+
+</div>
+
+<script>
+
+function calcular() {
+
+let P = parseFloat(document.getElementById("capital").value);
+let años = parseFloat(document.getElementById("años").value);
+let euribor = parseFloat(document.getElementById("euribor").value);
+let tipo = document.getElementById("tipo").value;
+let bonificacion = parseFloat(document.getElementById("bonificacion").value);
+let pagosAño = parseInt(document.getElementById("periodo").value);
+
+if (P < 100000 || P > 200000) return alert("Capital fuera de rango");
+if (años > 30) return alert("Máximo 30 años");
+
+let interes = (tipo === "fijo") ? euribor + 1 : euribor + 0.5;
+interes -= bonificacion;
+
+let i = (interes/100)/pagosAño;
+let n = años * pagosAño;
+
+let cuota = P * (i * Math.pow(1+i,n)) / (Math.pow(1+i,n)-1);
+
+let capitalPendiente = P;
+let totalPagado = 0;
+
+let tablaHTML = `<table>
+<tr><th>Año</th><th>Intereses</th><th>Amortización</th><th>Capital restante</th></tr>`;
+
+for (let año=1; año<=años; año++) {
+
+let interesAnual=0;
+let amortizacionAnual=0;
+
+for (let p=0; p<pagosAño; p++) {
+
+let interesPeriodo = capitalPendiente * i;
+let amortizacion = cuota - interesPeriodo;
+
+interesAnual += interesPeriodo;
+amortizacionAnual += amortizacion;
+
+capitalPendiente -= amortizacion;
+totalPagado += cuota;
+}
+
+tablaHTML += `<tr>
+<td>${año}</td>
+<td>${interesAnual.toFixed(2)}</td>
+<td>${amortizacionAnual.toFixed(2)}</td>
+<td>${capitalPendiente.toFixed(2)}</td>
+</tr>`;
+}
+
+tablaHTML += "</table>";
+
+let gastos = 150 + (cuota*n*0.001);
+let costeTotal = totalPagado + gastos;
+
+document.getElementById("resultado").innerHTML = `
+<div class="card"><span>Interés</span><b>${interes.toFixed(2)}%</b></div>
+<div class="card"><span>Cuota</span><b>${cuota.toFixed(2)}€</b></div>
+<div class="card"><span>Total pagado</span><b>${totalPagado.toFixed(2)}€</b></div>
+<div class="card"><span>Coste efectivo</span><b>${costeTotal.toFixed(2)}€</b></div>
+`;
+
+document.getElementById("tabla").innerHTML = tablaHTML;
+
+}
+
+</script>
+
+</body>
+</html>
